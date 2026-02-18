@@ -11,9 +11,7 @@
 
 'use strict';
 
-/* ================================================================
-   1. DATA UTILITIES
-   ================================================================ */
+/* 1. DATA UTILITIES */
 
 const DATA = {
   boroughs: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'],
@@ -45,7 +43,7 @@ const DATA = {
     'Excessive Tip',
   ],
 
-  /* ── Trips over time (30 days) ── */
+  /* Trips over time (30 days) */
   tripsOverTime: (() => {
     const labels = [];
     const values = [];
@@ -59,7 +57,7 @@ const DATA = {
     return { labels, values };
   })(),
 
-  /* ── Trips by borough ── */
+  /* Trips by borough */
   tripsByBorough: {
     'Manhattan':    482341,
     'Queens':       198762,
@@ -68,7 +66,7 @@ const DATA = {
     'Staten Island':  9128,
   },
 
-  /* ── Top pickup zones ── */
+  /* Top pickup zones */
   topZones: [
     { zone: 'Midtown Center',              borough: 'Manhattan',     trips: 54832, revenue: 3.82, farePerMile: 4.21, avgTip: 18.4 },
     { zone: 'Times Sq/Theatre District',   borough: 'Manhattan',     trips: 47201, revenue: 3.71, farePerMile: 4.09, avgTip: 17.2 },
@@ -82,7 +80,7 @@ const DATA = {
     { zone: 'Astoria',                     borough: 'Queens',        trips: 14109, revenue: 2.88, farePerMile: 3.31, avgTip: 13.7 },
   ],
 
-  /* ── Revenue per minute by hour ── */
+  /* Revenue per minute by hour */
   revByHour: (() => {
     const hrs = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2,'0')}:00`);
     const vals = [1.8, 1.5, 1.3, 1.2, 1.4, 2.1, 3.0, 3.8, 4.1, 3.9, 3.7, 3.9,
@@ -90,7 +88,7 @@ const DATA = {
     return { labels: hrs, values: vals };
   })(),
 
-  /* ── Rev per minute by borough ── */
+  /* Rev per minute by borough */
   revByBorough: {
     'Manhattan':    4.14,
     'Queens':       3.21,
@@ -99,7 +97,7 @@ const DATA = {
     'Staten Island':2.01,
   },
 
-  /* ── Tip % by borough ── */
+  /* Tip % by borough */
   tipByBorough: {
     'Manhattan':    18.6,
     'Brooklyn':     14.8,
@@ -108,7 +106,7 @@ const DATA = {
     'Staten Island': 9.7,
   },
 
-  /* ── Tip % by hour ── */
+  /* Tip % by hour */
   tipByHour: (() => {
     const hrs = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2,'0')}:00`);
     const vals = [22.1, 24.3, 26.8, 25.4, 18.2, 13.1, 12.4, 14.2, 15.8, 16.2, 16.7, 17.1,
@@ -116,14 +114,14 @@ const DATA = {
     return { labels: hrs, values: vals };
   })(),
 
-  /* ── Card vs Cash tips ── */
+  /* Card vs Cash tips */
   paymentTips: {
     boroughs: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'],
     card: [20.4, 16.1, 14.7, 11.8, 10.9],
     cash: [5.2,  3.8,  3.1,  2.4,  2.1],
   },
 
-  /* ── Anomalies ── */
+  /* Anomalies */
   anomalyBreakdown: {
     'Abnormal Fare':     1842,
     'Duplicate Trip':     634,
@@ -148,7 +146,7 @@ const DATA = {
     { id: 'TXN-07893', zone: 'Crown Heights',             type: 'GPS Mismatch',     fare: 18.00,  tip: 3.5,   severity: 'low',    note: 'Drop-off outside NYC bounds' },
   ],
 
-  /* ── KPI Summary ── */
+  /* KPI Summary */
   kpi: {
     totalTrips:        880345,
     avgFare:           18.42,
@@ -159,7 +157,7 @@ const DATA = {
   },
 };
 
-/* ── Utility: format numbers ── */
+/* Utility: format numbers */
 const fmt = {
   num:  (n) => n.toLocaleString(),
   usd:  (n) => `$${n.toFixed(2)}`,
@@ -168,7 +166,7 @@ const fmt = {
   rpm:  (n) => `$${n.toFixed(2)}/min`,
 };
 
-/* ── Utility: custom sort ── */
+/* Utility: custom sort */
 function sortData(arr, key, dir = 'desc') {
   return [...arr].sort((a, b) => {
     const va = typeof a[key] === 'string' ? a[key].toLowerCase() : a[key];
@@ -179,14 +177,14 @@ function sortData(arr, key, dir = 'desc') {
   });
 }
 
-/* ── Utility: get canvas 2D context ── */
+/* Utility: get canvas 2D context */
 function getCtx(id) {
   const el = document.getElementById(id);
   if (!el) return null;
   return { el, ctx: el.getContext('2d') };
 }
 
-/* ── Utility: device pixel ratio scaling ── */
+/* Utility: device pixel ratio scaling */
 function setupCanvas(el, w, h) {
   const dpr = window.devicePixelRatio || 1;
   el.width  = w * dpr;
@@ -198,15 +196,13 @@ function setupCanvas(el, w, h) {
   return ctx;
 }
 
-/* ── Utility: get element width ── */
+/* Utility: get element width */
 function elWidth(el) {
   return el.parentElement.clientWidth || 600;
 }
 
 
-/* ================================================================
-   2. CHART RENDERING FUNCTIONS
-   ================================================================ */
+/* 2. CHART RENDERING FUNCTIONS */
 
 /**
  * LINE CHART
