@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NYC Taxi Analytics — Profitability</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <a href="index.html" class="header-brand">
+        <div class="brand-icon">🚕</div>
+        <div class="brand-text">
+          <span class="brand-title">TaxiMetrics</span>
+          <span class="brand-subtitle">NYC Mobility Intelligence</span>
+        </div>
+      </a>
+
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-inner">
+          <span class="ticker-item">MIDTOWN CENTER <span class="up">$3.82/min</span></span>
+          <span class="ticker-item">JFK AIRPORT <span class="up">$4.14/min</span></span>
+          <span class="ticker-item">UPPER EAST SIDE <span class="up">$3.55/min</span></span>
+          <span class="ticker-item">TIMES SQ <span class="up">$3.71/min</span></span>
+          <span class="ticker-item">ASTORIA <span class="down">$2.88/min</span></span>
+          <span class="ticker-item">MIDTOWN CENTER <span class="up">$3.82/min</span></span>
+          <span class="ticker-item">JFK AIRPORT <span class="up">$4.14/min</span></span>
+          <span class="ticker-item">UPPER EAST SIDE <span class="up">$3.55/min</span></span>
+          <span class="ticker-item">TIMES SQ <span class="up">$3.71/min</span></span>
+          <span class="ticker-item">ASTORIA <span class="down">$2.88/min</span></span>
+        </div>
+      </div>
+
+      <div class="header-meta">
+        <div class="meta-tag">
+          <span class="meta-dot"></span>
+          LIVE
+        </div>
+        <div class="meta-tag">JAN 2024</div>
+      </div>
+    </header>
+
+    <!-- SIDEBAR NAV -->
+    <nav class="app-nav" aria-label="Main navigation">
+      <div class="nav-section-label">Dashboards</div>
+      <a href="index.html" class="nav-link">
+        <span class="nav-icon">◉</span>
+        Overview
+      </a>
+      <a href="profitability.html" class="nav-link active">
+        <span class="nav-icon">📈</span>
+        Profitability
+      </a>
+      <a href="tips.html" class="nav-link">
+        <span class="nav-icon">💡</span>
+        Tip Intelligence
+      </a>
+      <a href="anomalies.html" class="nav-link">
+        <span class="nav-icon">⚠</span>
+        Anomalies
+        <span class="nav-badge">4.9k</span>
+      </a>
+
+      <div class="nav-footer">
+        Data period: <span>Jan 2024</span><br>
+        Records: <span>880,345</span>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="app-main">
+
+      <div class="page-header">
+        <div class="page-title-block">
+          <div class="page-eyebrow">Analysis</div>
+          <h1 class="page-title">Profitability</h1>
+          <p class="page-subtitle">Revenue per minute, fare efficiency, and zone ranking by earnings potential</p>
+        </div>
+        <div class="page-controls sort-controls">
+          <label>Sort:</label>
+          <button class="btn active" onclick="sortProfBy('revenue', this)">Rev/Min</button>
+          <button class="btn" onclick="sortProfBy('fare', this)">Fare/Mile</button>
+          <button class="btn" onclick="sortProfBy('tip', this)">Tip %</button>
+          <button class="btn" onclick="sortProfBy('zone', this)">Name</button>
+        </div>
+      </div>
+
+      <!-- Ranking Table -->
+      <div class="table-card animate-in" style="margin-bottom:20px;">
+        <div class="table-header">
+          <span class="table-title">Top 10 Pickup Zones — Profitability Ranking</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">Click any column to sort</span>
+        </div>
+        <div class="table-scroll">
+          <table id="prof-table" aria-label="Profitability ranking by pickup zone">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th data-sort="zone">Zone ⇅</th>
+                <th>Borough</th>
+                <th data-sort="revenue" class="sort-desc">Rev / Min ⇅</th>
+                <th data-sort="fare">Fare / Mile ⇅</th>
+                <th data-sort="tip">Avg Tip % ⇅</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid charts-grid-2">
+
+        <div class="chart-card animate-in">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Revenue / Min by Borough</div>
+              <div class="chart-subtitle">Average $/min across all pickups in each borough</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chart-rev-borough" aria-label="Bar chart: revenue per minute by borough"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card animate-in">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Revenue / Min by Hour</div>
+              <div class="chart-subtitle">Intraday earning efficiency — all boroughs combined</div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#f5c518"></div>
+                $/min
+              </div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chart-rev-hour" aria-label="Line chart: revenue per minute by hour"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    function sortProfBy(key, btn) {
+      document.querySelectorAll('.sort-controls .btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Toggle direction
+      if (typeof profSortKey !== 'undefined' && profSortKey === key) {
+        profSortDir = profSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        profSortKey = key;
+        profSortDir = 'desc';
+      }
+      renderProfTable(DATA.topZones, key, profSortDir);
+    }
+  </script>
+</body>
+</html>

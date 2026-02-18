@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NYC Taxi Analytics — Anomalies</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <a href="index.html" class="header-brand">
+        <div class="brand-icon">🚕</div>
+        <div class="brand-text">
+          <span class="brand-title">TaxiMetrics</span>
+          <span class="brand-subtitle">NYC Mobility Intelligence</span>
+        </div>
+      </a>
+
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-inner">
+          <span class="ticker-item">FLAGGED TRIPS <span class="down">4,943</span></span>
+          <span class="ticker-item">ABNORMAL FARE <span class="down">1,842 cases</span></span>
+          <span class="ticker-item">GPS MISMATCH <span class="down">1,127 cases</span></span>
+          <span class="ticker-item">DUPLICATES <span class="down">634 cases</span></span>
+          <span class="ticker-item">EXCESSIVE TIP <span class="down">743 cases</span></span>
+          <span class="ticker-item">FLAGGED TRIPS <span class="down">4,943</span></span>
+          <span class="ticker-item">ABNORMAL FARE <span class="down">1,842 cases</span></span>
+          <span class="ticker-item">GPS MISMATCH <span class="down">1,127 cases</span></span>
+          <span class="ticker-item">DUPLICATES <span class="down">634 cases</span></span>
+          <span class="ticker-item">EXCESSIVE TIP <span class="down">743 cases</span></span>
+        </div>
+      </div>
+
+      <div class="header-meta">
+        <div class="meta-tag">
+          <span class="meta-dot" style="background:var(--red);box-shadow:0 0 8px var(--red);"></span>
+          ALERT
+        </div>
+        <div class="meta-tag">JAN 2024</div>
+      </div>
+    </header>
+
+    <!-- SIDEBAR NAV -->
+    <nav class="app-nav" aria-label="Main navigation">
+      <div class="nav-section-label">Dashboards</div>
+      <a href="index.html" class="nav-link">
+        <span class="nav-icon">◉</span>
+        Overview
+      </a>
+      <a href="profitability.html" class="nav-link">
+        <span class="nav-icon">📈</span>
+        Profitability
+      </a>
+      <a href="tips.html" class="nav-link">
+        <span class="nav-icon">💡</span>
+        Tip Intelligence
+      </a>
+      <a href="anomalies.html" class="nav-link active">
+        <span class="nav-icon">⚠</span>
+        Anomalies
+        <span class="nav-badge">4.9k</span>
+      </a>
+
+      <div class="nav-footer">
+        Data period: <span>Jan 2024</span><br>
+        Records: <span>880,345</span>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="app-main">
+
+      <div class="page-header">
+        <div class="page-title-block">
+          <div class="page-eyebrow">Data Quality</div>
+          <h1 class="page-title">Anomaly Detection</h1>
+          <p class="page-subtitle">Flagged trips requiring review — fraud signals, data errors, and outliers</p>
+        </div>
+        <div class="page-controls">
+          <button class="btn" onclick="filterAnomalies('all', this)" style="border-color:var(--yellow);color:var(--yellow)">All</button>
+          <button class="btn" onclick="filterAnomalies('high', this)">High</button>
+          <button class="btn" onclick="filterAnomalies('medium', this)">Medium</button>
+          <button class="btn" onclick="filterAnomalies('low', this)">Low</button>
+        </div>
+      </div>
+
+      <!-- Anomaly KPI Cards -->
+      <div class="kpi-grid" id="anomaly-kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid charts-grid-3" style="margin-bottom:20px;">
+
+        <div class="chart-card animate-in">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Anomalies by Type</div>
+              <div class="chart-subtitle">Volume breakdown of flagged trip categories</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chart-anomaly-type" height="240" aria-label="Bar chart: anomalies by type"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card animate-in">
+          <div class="chart-title" style="margin-bottom:12px;">Severity Breakdown</div>
+          <div style="display:flex;flex-direction:column;gap:16px;padding-top:8px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:12px;color:var(--text-secondary);">High Severity</span>
+                <span style="font-family:var(--font-mono);font-size:12px;color:var(--red);">2,894 cases</span>
+              </div>
+              <div class="progress-bar" style="height:8px;">
+                <div class="progress-fill red" style="width:58.6%"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:12px;color:var(--text-secondary);">Medium Severity</span>
+                <span style="font-family:var(--font-mono);font-size:12px;color:var(--yellow);">1,560 cases</span>
+              </div>
+              <div class="progress-bar" style="height:8px;">
+                <div class="progress-fill" style="width:31.6%"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:12px;color:var(--text-secondary);">Low Severity</span>
+                <span style="font-family:var(--font-mono);font-size:12px;color:var(--blue);">489 cases</span>
+              </div>
+              <div class="progress-bar" style="height:8px;">
+                <div class="progress-fill blue" style="width:9.8%"></div>
+              </div>
+            </div>
+            <div class="section-divider"></div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.7;">
+              <strong style="color:var(--red)">Abnormal Fare</strong> is the most prevalent anomaly,
+              often indicating meter malfunctions or surcharge application errors.
+              <strong style="color:var(--yellow)">GPS Mismatches</strong> suggest systematic route
+              data corruption affecting eastern Queens routes.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Flagged Trips Table -->
+      <div class="table-card animate-in">
+        <div class="table-header">
+          <span class="table-title">Flagged Trip Records</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="anomaly-count-badge" class="pill pill-red">Showing all 12 records</span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">Click headers to sort</span>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="anomaly-table" aria-label="Flagged trip records">
+            <thead>
+              <tr>
+                <th data-sort="id">Trip ID ⇅</th>
+                <th data-sort="zone">Zone ⇅</th>
+                <th data-sort="type">Anomaly Type ⇅</th>
+                <th data-sort="fare">Fare ⇅</th>
+                <th data-sort="tip">Tip % ⇅</th>
+                <th data-sort="severity">Severity ⇅</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    function filterAnomalies(severity, btn) {
+      document.querySelectorAll('.page-controls .btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filtered = severity === 'all'
+        ? DATA.flaggedTrips
+        : DATA.flaggedTrips.filter(t => t.severity === severity);
+      renderAnomalyTable(filtered, anomSortKey, anomSortDir);
+      const badge = document.getElementById('anomaly-count-badge');
+      if (badge) badge.textContent = `Showing ${filtered.length} record${filtered.length !== 1 ? 's' : ''}`;
+    }
+  </script>
+</body>
+</html>
