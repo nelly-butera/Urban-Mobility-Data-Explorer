@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NYC Taxi Analytics — Overview</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <a href="index.html" class="header-brand">
+        <div class="brand-icon">🚕</div>
+        <div class="brand-text">
+          <span class="brand-title">TaxiMetrics</span>
+          <span class="brand-subtitle">NYC Mobility Intelligence</span>
+        </div>
+      </a>
+
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-inner">
+          <span class="ticker-item">MANHATTAN <span class="up">▲ +4.2%</span></span>
+          <span class="ticker-item">BROOKLYN <span class="down">▼ -1.1%</span></span>
+          <span class="ticker-item">QUEENS <span class="up">▲ +2.8%</span></span>
+          <span class="ticker-item">AVG FARE <span class="up">▲ $18.42</span></span>
+          <span class="ticker-item">REV/MIN <span class="up">▲ $3.82</span></span>
+          <span class="ticker-item">FLAGGED <span class="down">▼ 0.56%</span></span>
+          <span class="ticker-item">MANHATTAN <span class="up">▲ +4.2%</span></span>
+          <span class="ticker-item">BROOKLYN <span class="down">▼ -1.1%</span></span>
+          <span class="ticker-item">QUEENS <span class="up">▲ +2.8%</span></span>
+          <span class="ticker-item">AVG FARE <span class="up">▲ $18.42</span></span>
+          <span class="ticker-item">REV/MIN <span class="up">▲ $3.82</span></span>
+          <span class="ticker-item">FLAGGED <span class="down">▼ 0.56%</span></span>
+        </div>
+      </div>
+
+      <div class="header-meta">
+        <div class="meta-tag">
+          <span class="meta-dot"></span>
+          LIVE
+        </div>
+        <div class="meta-tag">JAN 2024</div>
+      </div>
+    </header>
+
+    <!-- ═══ SIDEBAR NAV ═══ -->
+    <nav class="app-nav" aria-label="Main navigation">
+      <div class="nav-section-label">Dashboards</div>
+
+      <a href="index.html" class="nav-link active">
+        <span class="nav-icon">◉</span>
+        Overview
+      </a>
+      <a href="profitability.html" class="nav-link">
+        <span class="nav-icon">📈</span>
+        Profitability
+      </a>
+      <a href="tips.html" class="nav-link">
+        <span class="nav-icon">💡</span>
+        Tip Intelligence
+      </a>
+      <a href="anomalies.html" class="nav-link">
+        <span class="nav-icon">⚠</span>
+        Anomalies
+        <span class="nav-badge">4.9k</span>
+      </a>
+
+      <div class="nav-footer">
+        Data period: <span>Jan 2024</span><br>
+        Records: <span>880,345</span>
+      </div>
+    </nav>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <main class="app-main">
+
+      <div class="page-header">
+        <div class="page-title-block">
+          <div class="page-eyebrow">Dashboard</div>
+          <h1 class="page-title">Fleet Overview</h1>
+          <p class="page-subtitle">Real-time mobility snapshot — New York City Taxi & Limousine Commission</p>
+        </div>
+        <div class="page-controls">
+          <button class="btn active">Jan 2024</button>
+          <button class="btn">MTD</button>
+          <button class="btn">YTD</button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid" id="kpi-grid" role="region" aria-label="Key performance indicators">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="charts-grid charts-grid-3" style="margin-bottom:20px;">
+
+        <div class="chart-card animate-in">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Trips Over Time</div>
+              <div class="chart-subtitle">Daily volume — January 2024</div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#f5c518"></div>
+                Trips
+              </div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chart-trips-time" aria-label="Line chart: trips over time"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card animate-in">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Trips by Borough</div>
+              <div class="chart-subtitle">Total volume distribution</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chart-trips-borough" aria-label="Bar chart: trips by borough"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Top Zones Table -->
+      <div class="table-card animate-in" id="table-top-zones">
+        <div class="table-header">
+          <span class="table-title">Top 5 Pickup Zones by Trip Count</span>
+          <span class="pill pill-yellow">January 2024</span>
+        </div>
+        <div class="table-scroll">
+          <table aria-label="Top pickup zones">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Zone</th>
+                <th>Borough</th>
+                <th>Trips</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
