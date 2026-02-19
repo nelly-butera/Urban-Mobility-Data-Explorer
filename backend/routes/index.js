@@ -1,17 +1,6 @@
 'use strict';
 
-/**
- * routes/index.js
- * Central router for the NYC Taxi Analytics API.
- * Dispatches requests to the appropriate route module based on URL prefix.
- *
- * Route namespaces:
- *   /api/overview/*     → routes/overview.js
- *   /api/profitability/*→ routes/profitability.js
- *   /api/tips/*         → routes/tips.js
- *   /api/anomalies/*    → routes/anomalies.js
- */
-
+// importing the native url tool and our own logic folders
 const url         = require('url');
 const overview      = require('./overview');
 const profitability = require('./profitability');
@@ -19,9 +8,7 @@ const tips          = require('./tips');
 const anomalies     = require('./anomalies');
 const { error, ok, setCorsHeaders, parseQuery } = require('../utils/httpHelpers');
 
-// ---------------------------------------------------------------------------
-// Route table: prefix → handler module
-// ---------------------------------------------------------------------------
+// list of where to send the request based on how the url starts
 const ROUTE_TABLE = [
   { prefix: '/api/overview',      handler: overview      },
   { prefix: '/api/profitability', handler: profitability },
@@ -29,62 +16,54 @@ const ROUTE_TABLE = [
   { prefix: '/api/anomalies',     handler: anomalies     },
 ];
 
-// ---------------------------------------------------------------------------
-// Health check endpoint
-// ---------------------------------------------------------------------------
+// just a quick check to see if the server is actually alive
 function handleHealth(req, res) {
   ok(res, { status: 'ok', timestamp: new Date().toISOString() });
 }
 
-// ---------------------------------------------------------------------------
-// Main request dispatcher
-// ---------------------------------------------------------------------------
-
-/**
- * Dispatch an incoming HTTP request to the correct route handler.
- * @param {import('http').IncomingMessage} req
- * @param {import('http').ServerResponse}  res
- */
+// this is the main function that figures out where a request should go
 async function dispatch(req, res) {
-  // Always add CORS headers
+  // need these so the frontend can actually talk to us without errors
   setCorsHeaders(res);
 
-  // Handle pre-flight OPTIONS requests immediately
+  // browsers send this check first, so we just say "yeah we are good"
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
     return;
   }
 
-  // Parse the URL once
+  // splitting the url apart to see the path and the search params
   const parsed   = url.parse(req.url, true);
   const pathname = parsed.pathname || '/';
   const query    = parseQuery(new URL(req.url, 'http://localhost'));
 
-  // Health check
+  // if they just want the health check, send it here
   if (pathname === '/health' || pathname === '/api/health') {
     return handleHealth(req, res);
   }
 
-  // Walk route table — O(k) where k is the number of namespaces (small, constant)
+  // looping through our table to see if the url matches any of our prefixes
   for (let i = 0; i < ROUTE_TABLE.length; i++) {
     const { prefix, handler } = ROUTE_TABLE[i];
 
     if (pathname.startsWith(prefix)) {
-      // Compute sub-path relative to the prefix
+      // cut off the start of the url to get the specific endpoint they want
       const subpath = pathname.slice(prefix.length) || '/';
       try {
+        // try to run the logic for that specific route
         await handler.handle(req, res, subpath, query);
       } catch (err) {
-        console.error('[Router] Unhandled error in handler:', err.message, err.stack);
-        error(res, 500, 'Internal Server Error');
+        // if something breaks, log the mess and send a 500 error
+        console.error('[router] something broke in the handler:', err.message);
+        error(res, 500, 'internal server error');
       }
       return;
     }
   }
 
-  // No route matched
-  error(res, 404, `Route not found: ${pathname}`);
+  // if we got here, the url doesn't exist in our table
+  error(res, 404, `route not found: ${pathname}`);
 }
 
 module.exports = { dispatch };

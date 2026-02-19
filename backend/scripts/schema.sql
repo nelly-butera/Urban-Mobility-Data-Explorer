@@ -1,130 +1,130 @@
 -- schema.sql
--- Group project: NYC Taxi Trip Analysis
--- Need postgis and uuid extensions for this to work
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "postgis";
 
--- lookup table for the zones (from the csv)
-CREATE TABLE zones (
-    id            INTEGER PRIMARY KEY,
-    borough       VARCHAR(50),
-    zone_name     VARCHAR(100),
-    service_zone  VARCHAR(50)
+-- first we load the extensions for uuid and maps stuff
+create extension if not exists "uuid-ossp";
+create extension if not exists "postgis";
+
+-- simple lookup table for zones so we know where these taxis are actually going
+create table zones (
+    id            integer primary key,
+    borough       varchar(50),
+    zone_name     varchar(100),
+    service_zone  varchar(50)
 );
 
--- this holds the map shapes for the dashboard
-CREATE TABLE zone_shapes (
-    id           SERIAL PRIMARY KEY,
-    location_id  INTEGER,
-    area         NUMERIC,
-    len          NUMERIC,
-    geom         GEOMETRY(MultiPolygon, 2263), -- NY state plane
-    geom_web     GEOMETRY(MultiPolygon, 4326), -- WGS84 for the map
-    mappable     BOOLEAN DEFAULT TRUE,
-    notes        TEXT
+-- this holds the map shapes for the dashboard so it's not just boring numbers
+create table zone_shapes (
+    id           serial primary key,
+    location_id  integer,
+    area         numeric,
+    len          numeric,
+    geom         geometry(multipolygon, 2263), -- local ny map coords
+    geom_web     geometry(multipolygon, 4326), -- standard lat/long for the web
+    mappable     boolean default true,
+    notes        text
 );
 
--- simple indexes for map speed
-CREATE INDEX shape_id_idx ON zone_shapes(location_id);
-CREATE INDEX spatial_idx ON zone_shapes USING GIST(geom_web);
+-- indexing the shapes so the map doesn't take une eternite to load
+create index shape_id_idx on zone_shapes(location_id);
+create index spatial_idx on zone_shapes using gist(geom_web);
 
--- the big table for all the trips (7M+ rows)
-CREATE TABLE trips (
-    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    vendor            SMALLINT,
-    pickup_time       TIMESTAMPTZ NOT NULL,
-    dropoff_time      TIMESTAMPTZ NOT NULL,
-    passengers        SMALLINT,
-    distance          NUMERIC(8, 2) DEFAULT 0,
-    rate_id           SMALLINT,
-    store_fwd         CHAR(1),
+-- the absolute unit of a table. 7m+ rows in here.
+create table trips (
+    id                 uuid primary key default uuid_generate_v4(),
+    vendor             smallint,
+    pickup_time        timestamptz not null,
+    dropoff_time       timestamptz not null,
+    passengers         smallint,
+    distance           numeric(8, 2) default 0,
+    rate_id            smallint,
+    store_fwd          char(1),
     
-    -- join these to the zones table
-    pickup_zone       INTEGER REFERENCES zones(id) DEFERRABLE INITIALLY DEFERRED,
-    dropoff_zone      INTEGER REFERENCES zones(id) DEFERRABLE INITIALLY DEFERRED,
+    -- connecting to the zones table so we don't have to save the name every time
+    pickup_zone       integer references zones(id) deferrable initially deferred,
+    dropoff_zone      integer references zones(id) deferrable initially deferred,
 
-    payment_type      SMALLINT,
-    fare              NUMERIC(10, 2),
-    extra             NUMERIC(8, 2),
-    tax               NUMERIC(8, 2),
-    tip               NUMERIC(10, 2),
-    tolls             NUMERIC(8, 2),
-    surcharge         NUMERIC(8, 2),
-    total             NUMERIC(10, 2),
-    congestion        NUMERIC(8, 2),
+    payment_type      smallint,
+    fare              numeric(10, 2),
+    extra             numeric(8, 2),
+    tax               numeric(8, 2),
+    tip               numeric(10, 2),
+    tolls             numeric(8, 2),
+    surcharge         numeric(8, 2),
+    total             numeric(10, 2),
+    congestion        numeric(8, 2),
 
-    -- our calculated columns (feature engineering)
-    duration_min      NUMERIC(8, 2),
-    speed_mph         NUMERIC(8, 2),
-    money_per_min     NUMERIC(10, 4),
-    tip_pct           NUMERIC(8, 2),
-    cost_per_mile     NUMERIC(10, 4),
+    -- columns we calculated to make the data more interesting
+    duration_min      numeric(8, 2),
+    speed_mph         numeric(8, 2),
+    money_per_min     numeric(10, 4),
+    tip_pct           numeric(8, 2),
+    cost_per_mile     numeric(10, 4),
 
-    -- extra columns for faster charts
-    hour_of_day       SMALLINT,
-    day_of_week       SMALLINT, -- 0-6
-    is_peak           BOOLEAN,
-    created_at        TIMESTAMPTZ DEFAULT NOW()
+    -- extra columns so the chart queries don't take forever
+    hour_of_day       smallint,
+    day_of_week       smallint, -- 0-6
+    is_peak           boolean,
+    created_at        timestamptz default now()
 );
 
--- Indexes for the dashboard filters
-CREATE INDEX pickup_time_idx ON trips(pickup_time);
-CREATE INDEX pickup_zone_idx ON trips(pickup_zone);
-CREATE INDEX dropoff_zone_idx ON trips(dropoff_zone);
+-- indexing the columns we filter by so the api doesn't flop
+create index pickup_time_idx on trips(pickup_time);
+create index pickup_zone_idx on trips(pickup_zone);
+create index dropoff_zone_idx on trips(dropoff_zone);
 
--- Table for bad data we found during cleaning
-CREATE TABLE error_log (
-    err_id      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    row_num     BIGINT,
-    err_type    VARCHAR(100),
-    details     JSONB,
-    raw_data    JSONB,
-    created_at  TIMESTAMPTZ DEFAULT NOW()
+-- where we dump the bad data we found during the cleanup phase
+create table error_log (
+    err_id      uuid primary key default uuid_generate_v4(),
+    row_num     bigint,
+    err_type    varchar(100),
+    details     jsonb,
+    raw_data    jsonb,
+    created_at  timestamptz default now()
 );
 
--- Summary table for the graphs (Materialized view so it loads fast)
-CREATE MATERIALIZED VIEW hourly_stats AS
-SELECT
-    DATE_TRUNC('hour', pickup_time) AS hour_block,
+-- materialized views are great—they pre-save the math for the graphs
+create materialized view hourly_stats as
+select
+    date_trunc('hour', pickup_time) as hour_block,
     hour_of_day,
-    COUNT(*) AS total_trips,
-    AVG(total) AS avg_price,
-    AVG(tip) AS avg_tip,
-    AVG(tip_pct) AS avg_tip_pct,
-    AVG(duration_min) AS avg_duration,
-    AVG(speed_mph) AS avg_speed,
-    SUM(total) AS revenue,
-    AVG(money_per_min) AS earnings_per_min
-FROM trips
-GROUP BY 1, 2;
+    count(*) as total_trips,
+    avg(total) as avg_price,
+    avg(tip) as avg_tip,
+    avg(tip_pct) as avg_tip_pct,
+    avg(duration_min) as avg_duration,
+    avg(speed_mph) as avg_speed,
+    sum(total) as revenue,
+    avg(money_per_min) as earnings_per_min
+from trips
+group by 1, 2;
 
-CREATE UNIQUE INDEX hourly_stats_idx ON hourly_stats(hour_block);
+create unique index hourly_stats_idx on hourly_stats(hour_block);
 
--- Summary for the map
-CREATE MATERIALIZED VIEW zone_stats AS
-SELECT
-    z.id AS location_id,
+-- map summary table. basically a resume for every zone
+create materialized view zone_stats as
+select
+    z.id as location_id,
     z.borough,
     z.zone_name,
-    COUNT(t.id) AS trip_count,
-    AVG(t.total) AS avg_fare,
-    SUM(t.total) AS total_money,
-    AVG(t.tip_pct) AS avg_tip_pct,
-    AVG(t.money_per_min) AS avg_money_min,
-    -- check if we actually have a shape to draw
-    EXISTS (SELECT 1 FROM zone_shapes s WHERE s.location_id = z.id AND s.mappable = TRUE) AS has_shape
-FROM zones z
-LEFT JOIN trips t ON t.pickup_zone = z.id
-GROUP BY z.id, z.borough, z.zone_name;
+    count(t.id) as trip_count,
+    avg(t.total) as avg_fare,
+    sum(t.total) as total_money,
+    avg(t.tip_pct) as avg_tip_pct,
+    avg(t.money_per_min) as avg_money_min,
+    -- check if we actually have a shape to draw so the map doesn't look broken
+    exists (select 1 from zone_shapes s where s.location_id = z.id and s.mappable = true) as has_shape
+from zones z
+left join trips t on t.pickup_zone = z.id
+group by z.id, z.borough, z.zone_name;
 
-CREATE UNIQUE INDEX zone_stats_idx ON zone_stats(location_id);
+create unique index zone_stats_idx on zone_stats(location_id);
 
--- Run this to update the graphs after importing data
-CREATE OR REPLACE FUNCTION update_stats()
-RETURNS VOID AS $$
-BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY hourly_stats;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY zone_stats;
-END;
-$$ LANGUAGE plpgsql;
+-- run this after an import to update the charts and maps
+create or replace function update_stats()
+returns void as $$
+begin
+    refresh materialized view concurrently hourly_stats;
+    refresh materialized view concurrently zone_stats;
+end;
+$$ language plpgsql;

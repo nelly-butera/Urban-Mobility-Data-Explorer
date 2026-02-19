@@ -3,9 +3,10 @@
 const db            = require('../database');
 const { ok, error } = require('../utils/httpHelpers');
 
-// GET /api/overview/kpis
+// get /api/overview/kpis
 async function getKpis(req, res) {
   try {
+    // grabbing all the big numbers like total cash and avg speed from the trips table
     const result = await db.query(`
       SELECT
         COUNT(*)                       AS total_trips,
@@ -23,11 +24,9 @@ async function getKpis(req, res) {
       FROM trips
     `);
 
-    // Only count rows that are actually in the trips table.
-    // error_log also holds BAD_DATETIME + DROPOFF_BEFORE_PICKUP flags for rows
-    // that were excluded entirely — those never made it into trips, so counting
-    // them here inflates the KPI shown on the frontend.
-    // (trips.id is UUID; error_log.row_num is CSV row index — no direct join.)
+    // we only want to count rows that actually made it into the system.
+    // some rows were totally broken (bad dates etc) so we skip those
+    // so the dashboard doesn't look messy or wrong.
     const errorCount = await db.query(`
       SELECT COUNT(DISTINCT row_num) AS flagged_rows
       FROM error_log
@@ -35,6 +34,7 @@ async function getKpis(req, res) {
     `);
 
     const row = result.rows[0];
+    // cleaning up the numbers so they aren't like 10 decimal places long
     ok(res, {
       total_trips:            parseInt(row.total_trips, 10),
       total_revenue:          parseFloat(parseFloat(row.total_revenue).toFixed(2)),
@@ -48,16 +48,18 @@ async function getKpis(req, res) {
       latest_trip:            row.latest_trip,
       unique_pickup_zones:    parseInt(row.unique_pickup_zones, 10),
       unique_dropoff_zones:   parseInt(row.unique_dropoff_zones, 10),
-      flagged_rows:           parseInt(errorCount.rows[0].flagged_rows, 10),
+      flag_rows:              parseInt(errorCount.rows[0].flagged_rows, 10),
     });
   } catch (err) {
+    // if kpis fail just log the error and send a 500
     console.error('[overview/kpis]', err.message);
-    error(res, 500, 'Failed to fetch KPIs', err.message);
+    error(res, 500, 'failed to fetch kpis', err.message);
   }
 }
 
-// GET /api/overview/trips-over-time
+// get /api/overview/trips-over-time
 async function getTripsOverTime(req, res, query) {
+  // figure out if the user wants to see stats by the hour or by the day
   const unit = query.granularity === 'hour' ? 'hour' : 'day';
   try {
     const result = await db.query(`
@@ -74,12 +76,13 @@ async function getTripsOverTime(req, res, query) {
     ok(res, result.rows, { granularity: unit, count: result.rows.length });
   } catch (err) {
     console.error('[overview/trips-over-time]', err.message);
-    error(res, 500, 'Failed to fetch trips over time', err.message);
+    error(res, 500, 'failed to fetch trips over time', err.message);
   }
 }
 
-// GET /api/overview/top-zones
+// get /api/overview/top-zones
 async function getTopZones(req, res, query) {
+  // setting a limit so we don't try to load every single zone in nyc at once
   const limit = Math.min(parseInt(query.limit, 10) || 20, 100);
   try {
     const result = await db.query(`
@@ -93,6 +96,7 @@ async function getTopZones(req, res, query) {
         AVG(t.tip_pct)  AS avg_tip_percentage
       FROM zones z
       JOIN trips t ON t.pickup_zone = z.id
+      -- filter out the unknown/na zones bc they make the charts look bad
       WHERE z.id NOT IN (264, 265)
         AND z.zone_name NOT IN ('Unknown', 'N/A')
         AND z.borough   NOT IN ('Unknown', 'N/A')
@@ -103,16 +107,17 @@ async function getTopZones(req, res, query) {
     ok(res, result.rows, { limit, count: result.rows.length });
   } catch (err) {
     console.error('[overview/top-zones]', err.message);
-    error(res, 500, 'Failed to fetch top zones', err.message);
+    error(res, 500, 'failed to fetch top zones', err.message);
   }
 }
 
+// traffic control for the overview routes
 async function handle(req, res, subpath, query) {
-  if (req.method !== 'GET') return error(res, 405, 'Method Not Allowed');
+  if (req.method !== 'GET') return error(res, 405, 'method not allowed');
   if (subpath === '/kpis')            return getKpis(req, res);
   if (subpath === '/trips-over-time') return getTripsOverTime(req, res, query);
   if (subpath === '/top-zones')       return getTopZones(req, res, query);
-  error(res, 404, `Overview route not found: ${subpath}`);
+  error(res, 404, `overview route not found: ${subpath}`);
 }
 
 module.exports = { handle };

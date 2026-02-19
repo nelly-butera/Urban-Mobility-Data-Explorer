@@ -3,8 +3,9 @@
 const db            = require('../database');
 const { ok, error } = require('../utils/httpHelpers');
 
-// GET /api/profitability/top-zones
+// get /api/profitability/top-zones
 async function getTopProfitableZones(req, res, query) {
+  // capping the limit so the database doesn't hang
   const limit = Math.min(parseInt(query.limit, 10) || 20, 100);
   try {
     const result = await db.query(`
@@ -22,25 +23,29 @@ async function getTopProfitableZones(req, res, query) {
         AVG(t.tip_pct)    AS avg_tip_percentage
       FROM zones z
       JOIN trips t ON t.pickup_zone = z.id
+      -- ignoring nulls and the "unknown" zones so the data stays clean
       WHERE t.money_per_min IS NOT NULL
         AND z.id NOT IN (264, 265)
         AND z.zone_name NOT IN ('Unknown', 'N/A')
         AND z.borough   NOT IN ('Unknown', 'N/A')
       GROUP BY z.id, z.borough, z.zone_name, z.service_zone
+      -- only showing zones with enough trips to be statistically relevant
       HAVING COUNT(t.id) >= 10
       ORDER BY avg_revenue_per_minute DESC
       LIMIT $1
     `, [limit]);
     ok(res, result.rows, { limit, count: result.rows.length });
   } catch (err) {
+    // if the query fails for some reason
     console.error('[profitability/top-zones]', err.message);
-    error(res, 500, 'Failed to fetch top profitable zones', err.message);
+    error(res, 500, 'failed to fetch top profitable zones', err.message);
   }
 }
 
-// GET /api/profitability/by-borough
+// get /api/profitability/by-borough
 async function getProfitabilityByBorough(req, res) {
   try {
+    // grouping everything by borough to see the averages across the city
     const result = await db.query(`
       SELECT
         z.borough,
@@ -64,13 +69,14 @@ async function getProfitabilityByBorough(req, res) {
     ok(res, result.rows, { count: result.rows.length });
   } catch (err) {
     console.error('[profitability/by-borough]', err.message);
-    error(res, 500, 'Failed to fetch profitability by borough', err.message);
+    error(res, 500, 'failed to fetch profitability by borough', err.message);
   }
 }
 
-// GET /api/profitability/by-hour
+// get /api/profitability/by-hour
 async function getProfitabilityByHour(req, res) {
   try {
+    // checking which hours of the day are actually making the most money
     const result = await db.query(`
       SELECT
         hour_of_day,
@@ -88,16 +94,17 @@ async function getProfitabilityByHour(req, res) {
     ok(res, result.rows, { count: result.rows.length });
   } catch (err) {
     console.error('[profitability/by-hour]', err.message);
-    error(res, 500, 'Failed to fetch profitability by hour', err.message);
+    error(res, 500, 'failed to fetch profitability by hour', err.message);
   }
 }
 
+// this handles the sub-routing for the profitability section
 async function handle(req, res, subpath, query) {
-  if (req.method !== 'GET') return error(res, 405, 'Method Not Allowed');
+  if (req.method !== 'GET') return error(res, 405, 'method not allowed');
   if (subpath === '/top-zones')  return getTopProfitableZones(req, res, query);
   if (subpath === '/by-borough') return getProfitabilityByBorough(req, res);
   if (subpath === '/by-hour')    return getProfitabilityByHour(req, res);
-  error(res, 404, `Profitability route not found: ${subpath}`);
+  error(res, 404, `profitability route not found: ${subpath}`);
 }
 
 module.exports = { handle };

@@ -1,14 +1,14 @@
 'use strict';
 
+// connecting to the brain (db) and our helper tools
 const db            = require('../database');
 const { ok, error } = require('../utils/httpHelpers');
 
-// GET /api/anomalies/summary
+// get /api/anomalies/summary
 async function getAnomalySummary(req, res) {
   try {
-    // Exclude BAD_DATETIME and DROPOFF_BEFORE_PICKUP — those are rows that were
-    // rejected entirely and never inserted into trips. Showing them would inflate
-    // the counts and confuse the frontend (they have no trip to reference).
+    // we ghosted bad_datetime and dropoff_before_pickup bc they never even 
+    // made it into the main trips table. no point showing them to the user.
     const byType = await db.query(`
       SELECT err_type, COUNT(*) AS count
       FROM error_log
@@ -17,6 +17,7 @@ async function getAnomalySummary(req, res) {
       ORDER BY count DESC
     `);
 
+    // math time: counting every single l we found in the data
     const totals = await db.query(`
       SELECT
         COUNT(*)                  AS total_records,
@@ -25,6 +26,7 @@ async function getAnomalySummary(req, res) {
       WHERE err_type NOT IN ('BAD_DATETIME', 'DROPOFF_BEFORE_PICKUP')
     `);
 
+    // checking the total trip count so we can calculate the sus percentage
     const tripCount = await db.query(`SELECT COUNT(*) AS total FROM trips`);
 
     const totalTrips  = parseInt(tripCount.rows[0].total, 10);
@@ -33,6 +35,7 @@ async function getAnomalySummary(req, res) {
       ? parseFloat(((flaggedRows / totalTrips) * 100).toFixed(2))
       : 0;
 
+    // sending the tea back to the frontend
     ok(res, {
       total_error_records: parseInt(totals.rows[0].total_records, 10),
       unique_flagged_rows: flaggedRows,
@@ -40,14 +43,16 @@ async function getAnomalySummary(req, res) {
       by_type:             byType.rows,
     });
   } catch (err) {
+    // if it flops, log it and tell the user they're cooked
     console.error('[anomalies/summary]', err.message);
-    error(res, 500, 'Failed to fetch anomaly summary', err.message);
+    error(res, 500, 'failed to fetch anomaly summary', err.message);
   }
 }
 
-// GET /api/anomalies/list
-// Joins error_log -> trips -> zones so we get actual zone names and fare info
+// get /api/anomalies/list
+// getting a whole list of receipts so we can see why these trips are weird
 async function getAnomalyList(req, res, query) {
+  // capping the limit so the frontend doesn't explode
   const limit  = Math.min(parseInt(query.limit, 10)  || 50, 200);
   const offset = Math.max(parseInt(query.offset, 10) || 0,  0);
   const type   = query.type || null;
@@ -55,13 +60,14 @@ async function getAnomalyList(req, res, query) {
   const params     = [limit, offset];
   let   typeClause = '';
 
+  // if the user is looking for a specific type of error, filter it here
   if (type) {
     typeClause = 'AND el.err_type = $3';
     params.push(type);
   }
 
   try {
-    // JOIN trips + pickup zone so the table shows real zone names and fare values
+    // digging into the jsonb storage to pull out fare and distance info
     const result = await db.query(`
       SELECT
         el.err_id,
@@ -69,7 +75,7 @@ async function getAnomalyList(req, res, query) {
         el.err_type,
         el.details,
         el.created_at,
-        -- fare and distance are stored in the details JSONB by the ETL pipeline
+        -- parsing the json stuff bc sql needs real numbers to deal
         (el.details->>'fare')::numeric     AS fare,
         (el.details->>'distance')::numeric AS distance
       FROM error_log el
@@ -79,6 +85,7 @@ async function getAnomalyList(req, res, query) {
       LIMIT $1 OFFSET $2
     `, params);
 
+    // get the total count so the frontend knows how many pages to show
     const countParams = type ? [type] : [];
     const countWhere  = type
       ? "WHERE err_type = $1 AND err_type NOT IN ('BAD_DATETIME','DROPOFF_BEFORE_PICKUP')"
@@ -89,6 +96,7 @@ async function getAnomalyList(req, res, query) {
     );
 
     const total = parseInt(countResult.rows[0].total, 10);
+    // success! return the rows and the paging info
     ok(res, result.rows, {
       total,
       limit,
@@ -97,16 +105,21 @@ async function getAnomalyList(req, res, query) {
       has_more: offset + result.rows.length < total,
     });
   } catch (err) {
+    // big error vibes, logging it now
     console.error('[anomalies/list]', err.message);
-    error(res, 500, 'Failed to fetch anomaly list', err.message);
+    error(res, 500, 'failed to fetch anomaly list', err.message);
   }
 }
 
+// this is the traffic controller for the anomaly routes
 async function handle(req, res, subpath, query) {
-  if (req.method !== 'GET') return error(res, 405, 'Method Not Allowed');
+  // only get requests allowed here, no cap
+  if (req.method !== 'GET') return error(res, 405, 'method not allowed');
   if (subpath === '/summary') return getAnomalySummary(req, res);
   if (subpath === '/list')    return getAnomalyList(req, res, query);
-  error(res, 404, `Anomalies route not found: ${subpath}`);
+  
+  // if they hit a weird url, tell them it's a 404
+  error(res, 404, `anomalies route not found: ${subpath}`);
 }
 
 module.exports = { handle };
