@@ -1,4 +1,11 @@
 ﻿# Urban Mobility Data Explorer
+
+## SUBMISSION: 
+
+Youtube link: https://youtu.be/HwdThMcIzXA
+Repository link: https://github.com/nelly-butera/Urban-Mobility-Data-Explorer.git
+Tasksheet link: https://docs.google.com/spreadsheets/d/1DWq6NzFykMZpuvhqh4kF6aFv3t77RaAc7ErWufjh_8s/edit?gid=0#gid=0
+
 ### NYC Taxi Trip Analysis — January 2019
 
 A full-stack data engineering and analytics project built on top of the NYC Taxi & Limousine Commission (TLC) public dataset. We built everything from scratch: a streaming ETL pipeline, a REST API server, a PostgreSQL database on Neon, and a four-page interactive dashboard all without using any framework shortcuts (no Express, no ORM, no chart libraries).
