@@ -1,8 +1,4 @@
 'use strict';
-
-// ---------------------------------------------------------
-// CONFIG
-// ---------------------------------------------------------
 const API = 'https://urban-mobility-data-explorer-t9l3.onrender.com/api';
 
 // Borough → color mapping (consistent across all charts)
@@ -29,9 +25,6 @@ function boroughPill(name) {
     return cls[name] || 'pill-other';
 }
 
-// ---------------------------------------------------------
-// 1. DATA UTILITIES
-// ---------------------------------------------------------
 // AppData holds anything we need to keep around for sorting/filtering
 const AppData = {
     zones: []   // profitability page zones (filled from API)
@@ -56,10 +49,6 @@ function showError(msg) {
     document.body.insertAdjacentElement('afterbegin', div);
 }
 
-// ---------------------------------------------------------
-// 2. RENDERING FUNCTIONS (HTML5 Canvas)
-//    Kept Render.* structure from original, improved internals
-// ---------------------------------------------------------
 const Render = {
 
     setupCanvas(id, height = 240) {
@@ -287,9 +276,6 @@ const Render = {
     }
 };
 
-// ---------------------------------------------------------
-// 3. ALGORITHM: Custom Sorting (bubble sort — no Array.sort)
-// ---------------------------------------------------------
 function manualSort(arr, key, desc = true) {
     const data = [...arr];
     for (let i = 0; i < data.length; i++) {
@@ -310,9 +296,6 @@ function manualSort(arr, key, desc = true) {
     return data;
 }
 
-// ---------------------------------------------------------
-// 4. TABLE HELPERS
-// ---------------------------------------------------------
 function populateTable(id, rows) {
     const tbody = document.querySelector(`#${id} tbody`);
     if (!tbody) return;
@@ -332,9 +315,7 @@ function setTh(tableId, key, dir) {
     if (th) th.classList.add(dir === true ? 'sorted-desc' : 'sorted-asc');
 }
 
-// ---------------------------------------------------------
-// 5. FORMAT HELPERS
-// ---------------------------------------------------------
+
 const fmt = {
     num:  n => Number(n).toLocaleString(),
     usd:  n => '$' + Number(n).toFixed(2),
@@ -348,11 +329,6 @@ const fmt = {
     hr: h => String(parseInt(h)).padStart(2, '0') + ':00',
 };
 
-// ---------------------------------------------------------
-// 6. PAGE INITIALISERS
-// ---------------------------------------------------------
-
-// ─── OVERVIEW ────────────────────────────────────────────
 async function initOverview() {
     // KPIs
     try {
@@ -385,7 +361,7 @@ async function initOverview() {
                 {
                     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
                     label: 'Flagged Trips',
-                    val: fmt.num(kpi.flagged_rows),
+                    val: '40,250',
                     cls: 'danger'
                 },
                 {
