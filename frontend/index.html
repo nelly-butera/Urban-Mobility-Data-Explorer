@@ -11,7 +11,6 @@
 <header>
     <a href="index.html" class="brand">
         <div class="brand-icon">
-            <!-- car icon -->
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/>
                 <path d="M19 17h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"/>
@@ -20,7 +19,7 @@
                 <circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>
             </svg>
         </div>
-        <span class="brand-name">NYC Trips</span>
+        <span class="brand-name">NYC Taxi Project</span>
     </a>
     <nav>
         <a href="index.html" class="active">
@@ -44,42 +43,41 @@
 
 <div class="container">
     <div class="page-heading">
-        <h2>Overview</h2>
-        <p>NYC Taxi &amp; Limousine Commission · January 2019</p>
+        <h2>General Stats</h2>
+        <p>A look at the taxi data from January 2019</p>
     </div>
 
-    <!-- KPIs - filled by JS -->
     <div class="kpi-row" id="kpi-row"></div>
 
     <div class="grid grid-2">
         <div class="card">
-            <h3>Trips Over Time</h3>
-            <p class="card-sub">daily volume · jan 2019</p>
+            <h3>Trip Volume</h3>
+            <p class="card-sub">how many rides happened each day</p>
             <canvas id="chart-trips-time" height="240"></canvas>
         </div>
         <div class="card">
-            <h3>Trips by Borough</h3>
-            <p class="card-sub">pickup trip count</p>
+            <h3>Borough Comparison</h3>
+            <p class="card-sub">where most pickups happen</p>
             <canvas id="chart-trips-borough" height="240"></canvas>
         </div>
     </div>
 
     <div class="card">
-        <h3>Top Pickup Zones</h3>
+        <h3>Busiest Pickup Neighborhoods</h3>
         <div class="table-wrap">
             <table id="table-top-zones">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Zone</th>
+                        <th>Rank</th>
+                        <th>Location</th>
                         <th>Borough</th>
-                        <th>Trips</th>
-                        <th>Avg Fare</th>
-                        <th>Avg Tip %</th>
+                        <th>Total Trips</th>
+                        <th>Average Fare</th>
+                        <th>Average Tip %</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="loading-row"><td colspan="6">Loading...</td></tr>
+                    <tr class="loading-row"><td colspan="6">hang on, loading the table...</td></tr>
                 </tbody>
             </table>
         </div>

@@ -3,37 +3,6 @@
 
 A full-stack data engineering and analytics project built on top of the NYC Taxi & Limousine Commission (TLC) public dataset. We built everything from scratch: a streaming ETL pipeline, a REST API server, a PostgreSQL database on Neon, and a four-page interactive dashboard — all without using any framework shortcuts (no Express, no ORM, no chart libraries).
 
----
-
-## Table of Contents
-
-1. [Project Overview](#project-overview)
-2. [Dataset](#dataset)
-3. [System Architecture](#system-architecture)
-4. [Database Design](#database-design)
-5. [Data Pipeline](#data-pipeline)
-   - [Streaming Ingestion](#streaming-ingestion)
-   - [Feature Engineering](#feature-engineering)
-   - [Deduplication](#deduplication)
-   - [Data Quality & Anomaly Detection](#data-quality--anomaly-detection)
-6. [Custom Algorithms](#custom-algorithms)
-   - [Merge Sort](#merge-sort)
-   - [GroupBy & Aggregation](#groupby--aggregation)
-   - [Deduplication Hash Table](#deduplication-hash-table)
-7. [Backend API](#backend-api)
-   - [Server](#server)
-   - [Routing](#routing)
-   - [Endpoints](#endpoints)
-8. [Frontend Dashboard](#frontend-dashboard)
-   - [Overview Page](#overview-page)
-   - [Profitability Page](#profitability-page)
-   - [Tips Page](#tips-page)
-   - [Anomalies Page](#anomalies-page)
-   - [Charts & Visualisations](#charts--visualisations)
-9. [Setup Instructions](#setup-instructions)
-10. [Project Structure](#project-structure)
-11. [Key Findings](#key-findings)
-12. [References & Sources](#references--sources)
 
 ---
 
@@ -118,8 +87,6 @@ Raw CSV columns we worked with:
 
 ## Database Design
 
-We used **Neon** (https://neon.tech) as our PostgreSQL host — it's serverless, free tier, and supports PostGIS for the shapefile geometry work.
-
 ### Tables
 
 **`zones`** — TLC zone lookup (loaded first, ~265 rows)
@@ -132,7 +99,7 @@ CREATE TABLE zones (
 );
 ```
 
-**`trips`** — Main fact table (~7.6M rows after cleaning)
+**`trips`** — Main fact table (~7.6M rows big table), so we used a sample of 1M records
 ```sql
 CREATE TABLE trips (
     id           UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),

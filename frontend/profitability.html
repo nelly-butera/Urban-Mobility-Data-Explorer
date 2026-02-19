@@ -18,7 +18,7 @@
                 <circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>
             </svg>
         </div>
-        <span class="brand-name">NYC Trips</span>
+        <span class="brand-name">NYC Taxi Project</span>
     </a>
     <nav>
         <a href="index.html">
@@ -43,42 +43,42 @@
 <div class="container">
     <div class="page-heading">
         <h2>Profitability</h2>
-        <p>Revenue per minute by zone, borough, and time of day</p>
+        <p>Checking which areas and times of day make the most money per minute</p>
     </div>
 
     <div class="grid grid-2">
         <div class="card">
-            <h3>Revenue / Min by Borough</h3>
-            <p class="card-sub">avg $/min · all trips</p>
+            <h3>Earnings by Borough</h3>
+            <p class="card-sub">average dollars per minute</p>
             <canvas id="chart-rev-borough" height="240"></canvas>
         </div>
         <div class="card">
-            <h3>Revenue / Min by Hour</h3>
-            <p class="card-sub">intraday earning efficiency</p>
+            <h3>Best Times to Drive</h3>
+            <p class="card-sub">money made per minute throughout the day</p>
             <canvas id="chart-rev-hour" height="240"></canvas>
         </div>
     </div>
 
     <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
-            <h3 style="margin:0">Top Profitable Zones</h3>
-            <div style="font-size:12px;color:var(--muted);">Click column headers to sort</div>
+            <h3 style="margin:0">Most Profitable Neighborhoods</h3>
+            <div style="font-size:12px;color:var(--muted);">You can click the headers to sort the list</div>
         </div>
         <div class="table-wrap">
             <table id="table-profit-ranking">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th onclick="handleSort('zone_name')">Zone</th>
+                        <th>Rank</th>
+                        <th onclick="handleSort('zone_name')">Neighborhood</th>
                         <th>Borough</th>
-                        <th onclick="handleSort('rev_min')">Rev / Min</th>
+                        <th onclick="handleSort('rev_min')">$/Minute</th>
                         <th onclick="handleSort('avg_fare')">Avg Fare</th>
                         <th onclick="handleSort('avg_tip')">Avg Tip %</th>
                         <th>Trips</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="loading-row"><td colspan="7">Loading...</td></tr>
+                    <tr class="loading-row"><td colspan="7">checking the database...</td></tr>
                 </tbody>
             </table>
         </div>
