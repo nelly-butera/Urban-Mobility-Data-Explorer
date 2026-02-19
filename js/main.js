@@ -356,7 +356,7 @@ const fmt = {
 async function initOverview() {
     // KPIs
     try {
-        const kpi = await apiFetch('/overview/kpis');
+        const kpi = await apiFetch('api/overview/kpis');
         const flagPct = kpi.total_trips > 0
             ? (kpi.flagged_rows / kpi.total_trips * 100)
             : 0;
@@ -408,7 +408,7 @@ async function initOverview() {
 
     // Trips over time
     try {
-        const days = await apiFetch('/overview/trips-over-time?granularity=day');
+        const days = await apiFetch('api/overview/trips-over-time?granularity=day');
         Render.lineChart(
             'chart-trips-time',
             days.map(d => fmt.date(d.period)),
@@ -420,7 +420,7 @@ async function initOverview() {
 
     // Borough bar
     try {
-        const zones = await apiFetch('/overview/top-zones?limit=100');
+        const zones = await apiFetch('api/overview/top-zones?limit=100');
 
         // aggregate by borough
         const byB = {};
@@ -476,7 +476,7 @@ function renderProfTable(data) {
 async function initProfitability() {
     // Borough bar chart
     try {
-        const boros = await apiFetch('/profitability/by-borough');
+        const boros = await apiFetch('api/profitability/by-borough');
         const labels = boros.map(b => b.borough).filter(Boolean);
         const vals   = boros.map(b => parseFloat(b.avg_revenue_per_minute) || 0);
         Render.barChart('chart-rev-borough', labels, vals, labels.map(boroughColor), {
@@ -486,7 +486,7 @@ async function initProfitability() {
 
     // Hour line chart
     try {
-        const hrs = await apiFetch('/profitability/by-hour');
+        const hrs = await apiFetch('api/profitability/by-hour');
         Render.lineChart(
             'chart-rev-hour',
             hrs.map(r => fmt.hr(r.hour_of_day)),
@@ -498,7 +498,7 @@ async function initProfitability() {
 
     // Zone ranking table
     try {
-        const raw = await apiFetch('/profitability/top-zones?limit=20');
+        const raw = await apiFetch('api/profitability/top-zones?limit=20');
         AppData.zones = raw.map(z => ({
             zone_name: z.zone_name || '—',
             borough:   z.borough   || '—',
@@ -516,7 +516,7 @@ async function initTips() {
     let boroRows = [], hrRows = [], payRows = [];
 
     try {
-        boroRows = await apiFetch('/tips/by-borough');
+        boroRows = await apiFetch('api/tips/by-borough');
         const labels = boroRows.map(r => r.borough).filter(Boolean);
         const vals   = boroRows.map(r => parseFloat(r.avg_tip_percentage) || 0);
         Render.barChart('chart-tip-borough', labels, vals, labels.map(boroughColor), {
@@ -525,7 +525,7 @@ async function initTips() {
     } catch (e) { console.warn('tip-borough:', e.message); }
 
     try {
-        hrRows = await apiFetch('/tips/by-hour');
+        hrRows = await apiFetch('api/tips/by-hour');
         Render.lineChart(
             'chart-tip-hour',
             hrRows.map(r => fmt.hr(r.hour_of_day)),
@@ -536,7 +536,7 @@ async function initTips() {
     } catch (e) { console.warn('tip-hour:', e.message); }
 
     try {
-        payRows = await apiFetch('/tips/payment-comparison');
+        payRows = await apiFetch('api/tips/payment-comparison');
         const card = payRows.find(r => parseInt(r.payment_type) === 1);
         const cash = payRows.find(r => parseInt(r.payment_type) === 2);
         const cardAvg = card ? parseFloat(card.avg_tip_percentage) : 0;
@@ -755,7 +755,7 @@ function renderFlagLegend(byType) {
 async function initAnomalies() {
     let summary;
     try {
-        summary = await apiFetch('/anomalies/summary');
+        summary = await apiFetch('api/anomalies/summary');
     } catch (e) {
         showError(e.message);
         return;
@@ -812,7 +812,7 @@ async function initAnomalies() {
 
     // Flagged records table — uses the JOIN'd endpoint (zone_name from trips)
     try {
-        const list = await apiFetch('/anomalies/list?limit=50&offset=0');
+        const list = await apiFetch('api/anomalies/list?limit=50&offset=0');
         const tbody = document.querySelector('#table-anomalies tbody');
         if (tbody) {
             tbody.innerHTML = list.map(r => {
