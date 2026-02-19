@@ -2,7 +2,7 @@
 
 /**
  * data_processing/anomalyDetection.js
- * Detects and segregates anomalous trip records.
+ * Flags and separates unusual trip entries.
  *
  * Anomaly types detected:
  *   1. zero_distance_positive_fare  — trip_distance == 0 but fare_amount > 0
