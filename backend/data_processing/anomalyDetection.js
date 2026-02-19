@@ -1,29 +1,10 @@
 'use strict';
 
-/**
- * data_processing/anomalyDetection.js
- * Flags and separates unusual trip entries.
- *
- * Anomaly types detected:
- *   1. zero_distance_positive_fare  — trip_distance == 0 but fare_amount > 0
- *   2. excessive_speed              — average_speed_mph > 80
- *   3. invalid_duration             — trip_duration_minutes <= 0 or null
- *   4. excessive_tip_percentage     — tip_percentage > 100%
- *
- * Each flagged trip is moved to an anomalies list; clean trips are returned separately.
- *
- * Time Complexity: O(n) — single forward pass with O(1) checks per trip.
- */
-
 const config = require('../config');
-
-// ---------------------------------------------------------------------------
-// Individual anomaly checkers
-// ---------------------------------------------------------------------------
 
 /**
  * @param {Object} trip
- * @returns {string|null}  Anomaly type label, or null if OK
+ * @returns {string|null}  // this checks anomaly type
  */
 function checkZeroDistancePositiveFare(trip) {
   const distance = parseFloat(trip.trip_distance) || 0;
@@ -69,7 +50,7 @@ function checkExcessiveTipPercentage(trip) {
   return null;
 }
 
-// Ordered list of checker functions — easy to extend
+// Ordered list of checker functions
 const CHECKERS = [
   checkZeroDistancePositiveFare,
   checkExcessiveSpeed,
@@ -77,13 +58,8 @@ const CHECKERS = [
   checkExcessiveTipPercentage,
 ];
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 /**
- * Run all anomaly checks against a trip.
- * Returns an array of anomaly type labels (may be empty if clean).
+ * // Run all anomaly checks against a trip, returns an array of anomaly type labels (may be empty if clean).
  *
  * @param {Object} trip
  * @returns {string[]}
@@ -103,7 +79,7 @@ function detectAnomalies(trip) {
  * Partition trips into { clean, anomalies }.
  * A trip with ANY anomaly flag is moved to the anomalies list.
  *
- * @param {Array<Object>} trips  Enriched trip records (features already computed)
+ * @param {Array<Object>} trips  cleaned trip records 
  * @returns {{ clean: Array<Object>, anomalies: Array<{trip: Object, types: string[]}> }}
  */
 function partitionTrips(trips) {
@@ -129,7 +105,7 @@ function partitionTrips(trips) {
 }
 
 /**
- * Build a structured detail object for an anomalous trip (stored in DB as JSONB).
+ * this is where the anomalies object to be stored in the db is made.
  * @param {Object}   trip
  * @param {string[]} types
  * @returns {Object}

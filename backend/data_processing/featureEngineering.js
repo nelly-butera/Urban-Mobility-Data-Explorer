@@ -1,45 +1,31 @@
 'use strict';
 
-/**
- * data_processing/featureEngineering.js
- * Computes derived features for each taxi trip record:
- *   - trip_duration_minutes
- *   - average_speed_mph
- *   - revenue_per_minute
- *   - tip_percentage
- */
-
-/**
- * Enrich a single trip object with derived features.
- * The input record is mutated in-place and returned.
- *
- * @param {Object} trip  Raw trip record (post-join with zone data)
- * @returns {Object}     Same object with new numeric fields appended
- */
+// This function adds new calculated data to a single taxi trip
 function computeFeatures(trip) {
-  // ── trip_duration_minutes ─────────────────────────────────────────────────
+  // First we calculate how long the trip lasted in minutes
   const pickupMs  = new Date(trip.pickup_datetime).getTime();
   const dropoffMs = new Date(trip.dropoff_datetime).getTime();
   const durationMs = dropoffMs - pickupMs;
 
-  // Store as decimal minutes; null if dates are invalid
+  // We divide by 60,000 to turn milliseconds into minutes and keep 2 decimal spots
   trip.trip_duration_minutes =
     isFinite(durationMs) && durationMs > 0
       ? parseFloat((durationMs / 60000).toFixed(2))
       : null;
 
-  // ── average_speed_mph ─────────────────────────────────────────────────────
+  // Next we find the average speed in miles per hour
   const distanceMiles     = parseFloat(trip.trip_distance) || 0;
   const durationHours     = trip.trip_duration_minutes
-    ? trip.trip_duration_minutes / 60
+    ? trip.trip_duration_minutes / 60 // Turn minutes into hours for the MPH math
     : null;
 
+  // We only calculate speed if the taxi actually moved and time passed
   trip.average_speed_mph =
     durationHours && durationHours > 0 && distanceMiles > 0
       ? parseFloat((distanceMiles / durationHours).toFixed(2))
       : null;
 
-  // ── revenue_per_minute ────────────────────────────────────────────────────
+  // Now we see how much money the driver makes every minute
   const totalAmount = parseFloat(trip.total_amount) || 0;
 
   trip.revenue_per_minute =
@@ -47,10 +33,11 @@ function computeFeatures(trip) {
       ? parseFloat((totalAmount / trip.trip_duration_minutes).toFixed(4))
       : null;
 
-  // ── tip_percentage ────────────────────────────────────────────────────────
+  // Finally, we calculate what percentage the passenger tipped
   const tipAmount  = parseFloat(trip.tip_amount)  || 0;
   const fareAmount = parseFloat(trip.fare_amount) || 0;
 
+  // We check if fare is above 0 so we don't accidentally divide by zero
   trip.tip_percentage =
     fareAmount > 0
       ? parseFloat(((tipAmount / fareAmount) * 100).toFixed(2))
@@ -59,12 +46,7 @@ function computeFeatures(trip) {
   return trip;
 }
 
-/**
- * Enrich an array of trips in a single pass — O(n).
- *
- * @param {Array<Object>} trips
- * @returns {Array<Object>} Same array, each element enriched
- */
+// This function takes a whole list of trips and runs the math on every single one
 function computeFeaturesForAll(trips) {
   for (let i = 0; i < trips.length; i++) {
     computeFeatures(trips[i]);

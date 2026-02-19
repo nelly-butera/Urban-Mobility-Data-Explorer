@@ -1,65 +1,44 @@
 'use strict';
 
-/**
- * data_processing/deduplication.js
- *
- * Manual deduplication using a plain object as a hash table.
- * Per requirements: no built-in Set, no advanced utilities.
- *
- * Strategy:
- *   Build a composite key from the fields that uniquely identify a trip.
- *   On first encounter, store the trip. On subsequent encounters, skip it.
- *
- * Time Complexity:  O(n)  — single forward pass; hash-table lookup/insert O(1) avg.
- * Space Complexity: O(n)  — hash table stores at most n keys.
- */
-
-/**
- * Produce a deterministic string key that identifies a unique trip.
- * Uses: vendor_id + pickup_datetime + dropoff_datetime + pu_location_id + do_location_id + total_amount.
- *
- * @param {Object} trip
- * @returns {string}
- */
+// This function makes a long "ID" string by gluing trip details together with pipes
 function buildTripKey(trip) {
   return [
-    trip.vendor_id          ?? '',
-    trip.pickup_datetime    ?? '',
-    trip.dropoff_datetime   ?? '',
-    trip.pu_location_id     ?? '',
-    trip.do_location_id     ?? '',
-    trip.total_amount       ?? '',
-  ].join('|');
+    trip.vendor_id           ?? '',
+    trip.pickup_datetime     ?? '',
+    trip.dropoff_datetime    ?? '',
+    trip.pu_location_id      ?? '',
+    trip.do_location_id      ?? '',
+    trip.total_amount        ?? '',
+  ].join('|'); // The pipe symbol helps separate the values so they don't mush together
 }
 
-/**
- * Remove duplicate trip records using a hash table.
- * The FIRST occurrence of each unique key is retained.
- *
- * @param {Array<Object>} trips  Raw trip records (may contain duplicates)
- * @returns {{ unique: Array<Object>, duplicateCount: number }}
- */
+// This function goes through a list of trips and throws away the copies
 function deduplicate(trips) {
-  // Plain object used as hash map — deliberately avoids Set per project rules
+  // We use this empty object to remember which trip "IDs" we have already seen
   const seen           = Object.create(null);
   const unique         = [];
   let   duplicateCount = 0;
 
-  // O(n) forward pass
+  // Loop through every trip in the list one by one
   for (let i = 0; i < trips.length; i++) {
+    // Get the unique "ID" for the current trip
     const key = buildTripKey(trips[i]);
 
+    // If the ID isn't in our "seen" list yet, it's a new trip
     if (seen[key] === undefined) {
-      // First encounter — mark as seen and keep the record
-      seen[key] = 1;                        // O(1) insert
-      unique[unique.length] = trips[i];     // O(1) append
+      // Add it to the "seen" list so we don't pick it up again
+      seen[key] = 1; 
+      // Put the trip into our final list of unique trips
+      unique[unique.length] = trips[i];
     } else {
-      // Duplicate — discard
+      // If we already saw this ID, it's a double, so we just count it and skip it
       duplicateCount++;
     }
   }
 
+  // Send back the clean list and the count of how many copies we found
   return { unique, duplicateCount };
 }
 
+// Share these functions so the other files can use them
 module.exports = { deduplicate, buildTripKey };
