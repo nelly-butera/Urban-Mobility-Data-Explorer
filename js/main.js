@@ -3,7 +3,7 @@
 // ---------------------------------------------------------
 // CONFIG
 // ---------------------------------------------------------
-const API = 'http://localhost:3000/api';
+const API = 'https://urban-mobility-data-explorer-t9l3.onrender.com';
 
 // Borough → color mapping (consistent across all charts)
 const BOROUGH_COLORS = {
