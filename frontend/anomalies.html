@@ -2,39 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NYC Taxi | Overview</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Trips | Anomalies</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <h1>TaxiAnalytics</h1>
-        <nav>
-            <a href="index.html" class="active">Overview</a>
-            <a href="profitability.html">Profitability</a>
-            <a href="tips.html">Tips</a>
-            <a href="anomalies.html">Anomalies</a>
-        </nav>
-    </header>
 
-    <div class="container">
-        <div class="kpi-row">
-            <div class="card"><span class="kpi-label">Flagged Trips</span><span class="kpi-value" id="kpi-flag-count">12,450</span></div>
-            <div class="card"><span class="kpi-label">% of Total</span><span class="kpi-value">1.24%</span></div>
-            <div class="card"><span class="kpi-label">Common Anomaly</span><span class="kpi-value">High Speed</span></div>
+<header>
+    <a href="index.html" class="brand">
+        <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/>
+                <path d="M19 17h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"/>
+                <path d="M5 9l2-5h10l2 5"/><path d="M5 9h14v8H5z"/>
+                <circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>
+            </svg>
         </div>
-        <div class="dashboard-grid">
-            <div class="card"><h3>Anomalies by Type</h3><canvas id="chart-anomalies-type"></canvas></div>
-            <div class="card">
-                <h3>Flagged Trip Sample</h3>
-                <div class="table-container">
-                    <table id="table-anomalies">
-                        <thead><tr><th>Row</th><th>Error Type</th><th>Details</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+        <span class="brand-name">NYC Trips</span>
+    </a>
+    <nav>
+        <a href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Overview
+        </a>
+        <a href="profitability.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Profitability
+        </a>
+        <a href="tips.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Tips
+        </a>
+        <a href="anomalies.html" class="active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Anomalies
+        </a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="page-heading">
+        <h2>Anomalies</h2>
+        <p>Data quality flags from the ETL pipeline</p>
+    </div>
+
+    <!-- KPIs - filled by JS -->
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <h3>Flags by Type</h3>
+            <p class="card-sub">error_log breakdown</p>
+            <canvas id="chart-anomalies-type" height="240"></canvas>
+        </div>
+        <div class="card">
+            <h3>Flagged Trip Sample</h3>
+            <p class="card-sub">most recent 50 records</p>
+            <div class="table-wrap">
+                <table id="table-anomalies">
+                    <thead>
+                        <tr>
+                            <th>Row #</th>
+                            <th>Zone</th>
+                            <th>Flag Type</th>
+                            <th>Fare</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="loading-row"><td colspan="5">Loading...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    <script src="js/main.js"></script>
+</div>
+
+<div id="chart-tooltip">
+    <div class="tt-label" id="tt-label"></div>
+    <div class="tt-val" id="tt-val"></div>
+</div>
+<script src="js/main.js"></script>
 </body>
 </html>
