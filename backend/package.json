@@ -1,0 +1,36 @@
+{
+  "name": "nyc-taxi-analytics-platform",
+  "version": "1.0.0",
+  "description": "Enterprise-level NYC Taxi Mobility Analytics Platform",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "start:load": "LOAD_DATA=true node server.js",
+    "dev": "nodemon server.js",
+    "db:schema": "node -e \"require('fs').readFileSync('schema.sql','utf8').split(';').forEach(s=>s.trim()&&console.log(s))\"",
+    "load:zones": "node -e \"const {loadData}=require('./data_processing/dataLoader');loadData().then(()=>process.exit(0))\"",
+    "load:shapefile": "node scripts/loadShapefile.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.3",
+    "dotenv": "^16.6.1",
+    "pg": "^8.11.3",
+    "proj4": "^2.10.0",
+    "shapefile": "^0.6.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "keywords": [
+    "nyc",
+    "taxi",
+    "analytics",
+    "node",
+    "postgresql",
+    "neon"
+  ],
+  "license": "MIT"
+}
