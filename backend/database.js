@@ -1,83 +1,70 @@
 'use strict';
 
-/**
- * database.js
- * Thin wrapper around the `pg` connection pool.
- * Exposes query(), getClient(), and end() for graceful shutdown.
- */
-
+//  need the 'Pool' tool from the 'pg' (node-postgres) package
 const { Pool } = require('pg');
-const config   = require('./config');
-
-// ---------------------------------------------------------------------------
-// Pool initialisation
-// ---------------------------------------------------------------------------
-
-const pool = new Pool({
-  host:               config.database.host,
-  port:               config.database.port,
-  database:           config.database.database,
-  user:               config.database.user,
-  password:           config.database.password,
-  max:                config.database.max,
-  idleTimeoutMillis:  config.database.idleTimeoutMs,
-  connectionTimeoutMillis: config.database.connectionTimeoutMs,
-});
-
-// Surface pool-level errors so the process doesn't crash silently
-pool.on('error', (err) => {
-  console.error('[DB] Unexpected pool error:', err.message);
-});
-
-// ---------------------------------------------------------------------------
-// Public helpers
-// ---------------------------------------------------------------------------
+const config = require('./config');
 
 /**
- * Execute a parameterised query and return the pg Result object.
- * @param {string}  text   SQL string with $1 … $n placeholders
- * @param {Array}   params Parameter values
- * @returns {Promise<import('pg').QueryResult>}
+ * create a "Pool" here. 
+ * Think of it as a stack of open phone lines to your database.
+ * Instead of dialing the database every time we want to say something,
+ * we just grab an open line from the pool.
+ */
+const pool = new Pool({
+  // If we have that long Neon URL, use it!
+  connectionString: config.database.connectionString,
+  
+  // These are backup settings in case the URL isn't there
+  host: config.database.host,
+  port: config.database.port,
+  database: config.database.database,
+  user: config.database.user,
+  password: config.database.password,
+  
+  // SSL is like 'https' for your database. Neon requires this.
+  ssl: config.database.ssl,
+  
+  // Don't open more than X connections at once
+  max: config.database.max,
+});
+
+pool.on('connect', () => {
+  console.log('db connected to the database!');
+});
+
+
+pool.on('error', (err) => {
+  console.error('db unexpected error:', err.message);
+});
+
+/**
+ * dis is e main function you'll use.
+ * 'text' is your SQL command (like SELECT * FROM...)
+ * 'params' r e variables you want to safely plug into the SQL
  */
 async function query(text, params) {
-  const start = Date.now();
   try {
+    // We send the command to the database and wait for it to finish
     const result = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.debug(`[DB] query executed in ${duration}ms | rows=${result.rowCount}`);
     return result;
   } catch (err) {
-    console.error('[DB] Query error:', err.message, '\nSQL:', text);
+    // If you wrote bad SQL, this is where it tells you why
+    console.error('db query failed!');
+    console.error('SQL command:', text);
+    console.error('Error message:', err.message);
     throw err;
   }
 }
 
-/**
- * Acquire a dedicated client from the pool (for transactions).
- * Callers MUST call client.release() when done.
- * @returns {Promise<import('pg').PoolClient>}
- */
 async function getClient() {
   const client = await pool.connect();
-  // Monkey-patch release to log long-held clients
-  const originalRelease = client.release.bind(client);
-  const acquired = Date.now();
-  client.release = () => {
-    const held = Date.now() - acquired;
-    if (held > 5000) {
-      console.warn(`[DB] Client held for ${held}ms — potential connection leak`);
-    }
-    originalRelease();
-  };
   return client;
 }
 
-/**
- * Gracefully close the pool (call on process exit).
- */
+
 async function end() {
   await pool.end();
-  console.log('[DB] Connection pool closed');
+  console.log('db connection pool closed.');
 }
 
 module.exports = { query, getClient, end };
