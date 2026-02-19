@@ -588,6 +588,170 @@ const FLAG_NOTES = {
     ZERO_DIST_POS_FARE:    'no distance + fare',
 };
 
+
+// ── FLAG LEGEND ────────────────────────────────────────────
+// Renders a bullet list below the "Flags by Type" chart explaining
+// what each flag code means and whether those trips are kept or excluded.
+
+const FLAG_META = {
+    // ── Data quality flags — trip is RETAINED in the trips table ──
+    ZERO_PASS: {
+        label:  'ZERO_PASS',
+        desc:   'Trip recorded with zero passengers. Kept in dataset — driver may have forgotten to update the meter.',
+        action: 'retained',
+        color:  '#f97316',
+    },
+    HIGH_PASS: {
+        label:  'HIGH_PASS',
+        desc:   'Passenger count exceeds 8. Kept — likely a data entry error, but the fare data is still valid.',
+        action: 'retained',
+        color:  '#f97316',
+    },
+    ZERO_DIST: {
+        label:  'ZERO_DIST',
+        desc:   'Trip distance recorded as zero or negative. Kept — could be a GPS failure or very short fare.',
+        action: 'retained',
+        color:  '#f5c000',
+    },
+    LARGE_DIST: {
+        label:  'LARGE_DIST',
+        desc:   'Trip distance exceeds 100 miles. Kept — extreme outlier but may be a legitimate airport/long-haul ride.',
+        action: 'retained',
+        color:  '#f5c000',
+    },
+    NEG_FARE: {
+        label:  'NEG_FARE',
+        desc:   'Fare amount is negative. Kept — possibly a refund or meter reversal; revenue calculations use absolute values.',
+        action: 'retained',
+        color:  '#e05252',
+    },
+    NEG_TOTAL: {
+        label:  'NEG_TOTAL',
+        desc:   'Total charge is negative. Kept — same as NEG_FARE; often accompanies a dispute or void.',
+        action: 'retained',
+        color:  '#e05252',
+    },
+    NEG_TIP: {
+        label:  'NEG_TIP',
+        desc:   'Tip amount is negative. Kept — this skews the average tip percentage; tip_pct is set to null for these rows.',
+        action: 'retained',
+        color:  '#e05252',
+    },
+    BAD_RATE_CODE: {
+        label:  'BAD_RATE_CODE',
+        desc:   'RatecodeID is outside the standard range (1–6). Kept — the TLC defines six valid codes; anything else is a metering anomaly.',
+        action: 'retained',
+        color:  '#8b5cf6',
+    },
+    // ── Post-enrichment anomaly flags — trip is also RETAINED ──
+    HIGH_SPEED: {
+        label:  'HIGH_SPEED',
+        desc:   'Computed average speed exceeds 80 mph. Kept — almost certainly a GPS or datetime error rather than an actual speed.',
+        action: 'retained',
+        color:  '#e05252',
+    },
+    HIGH_TIP_PCT: {
+        label:  'HIGH_TIP_PCT',
+        desc:   'Tip percentage exceeds 100% of the fare. Kept — can happen with preset tip buttons on very cheap fares.',
+        action: 'retained',
+        color:  '#e05252',
+    },
+    ZERO_DIST_POS_FARE: {
+        label:  'ZERO_DIST_POS_FARE',
+        desc:   'Distance is zero but a fare was still charged. Kept — contradictory data; could be a stationary fare (e.g. waiting time).',
+        action: 'retained',
+        color:  '#f5c000',
+    },
+    // ── Hard exclusions — trip is NOT in the trips table ──
+    BAD_DATETIME: {
+        label:  'BAD_DATETIME',
+        desc:   'Pickup or dropoff datetime could not be parsed. Excluded — without valid timestamps, duration and speed are impossible to compute.',
+        action: 'excluded',
+        color:  '#9ca3af',
+    },
+    DROPOFF_BEFORE_PICKUP: {
+        label:  'DROPOFF_BEFORE_PICKUP',
+        desc:   'Dropoff time is earlier than or equal to pickup time. Excluded — negative durations make all derived features nonsensical.',
+        action: 'excluded',
+        color:  '#9ca3af',
+    },
+};
+
+function renderFlagLegend(byType) {
+    const el = document.getElementById('flag-legend');
+    if (!el) return;
+
+    // Only render legend items for flag types that actually appear in the data
+    const presentTypes = byType.map(r => r.err_type);
+
+    // Separate retained vs excluded for grouping
+    const retained = presentTypes.filter(t => {
+        const m = FLAG_META[t];
+        return m && m.action === 'retained';
+    });
+    const excluded = presentTypes.filter(t => {
+        const m = FLAG_META[t];
+        return m && m.action === 'excluded';
+    });
+
+    function renderGroup(types, heading, headingColor) {
+        if (!types.length) return '';
+        const items = types.map(t => {
+            const m  = FLAG_META[t];
+            const ct = byType.find(r => r.err_type === t);
+            const count = ct ? fmt.num(parseInt(ct.count)) : '';
+            return `
+                <li style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f3f4f6;align-items:flex-start">
+                    <span style="
+                        font-family:'DM Mono',monospace;
+                        font-size:10px;
+                        background:${m.color}18;
+                        color:${m.color};
+                        border:1px solid ${m.color}40;
+                        border-radius:4px;
+                        padding:2px 6px;
+                        white-space:nowrap;
+                        flex-shrink:0;
+                        margin-top:1px;
+                    ">${m.label}</span>
+                    <span style="font-size:12px;color:#374151;line-height:1.55">
+                        ${m.desc}
+                        ${count ? `<span style="color:#9ca3af;margin-left:4px">(${count} records)</span>` : ''}
+                    </span>
+                </li>`;
+        }).join('');
+
+        return `
+            <div style="margin-bottom:14px">
+                <div style="
+                    font-size:10px;
+                    font-weight:600;
+                    letter-spacing:0.1em;
+                    text-transform:uppercase;
+                    color:${headingColor};
+                    margin-bottom:6px;
+                    display:flex;
+                    align-items:center;
+                    gap:6px;
+                ">${heading}</div>
+                <ul style="list-style:none;padding:0;margin:0">${items}</ul>
+            </div>`;
+    }
+
+    el.innerHTML = `
+        <div style="
+            border-top:1px solid #e5e7eb;
+            padding-top:16px;
+            margin-top:4px;
+        ">
+            <div style="font-size:12px;font-weight:600;color:#1e2330;margin-bottom:12px">
+                Flag Reference
+            </div>
+            ${renderGroup(retained, '&#9679; Trips retained in dataset', '#22c55e')}
+            ${renderGroup(excluded, '&#8856; Trips excluded from dataset', '#9ca3af')}
+        </div>`;
+}
+
 async function initAnomalies() {
     let summary;
     try {
@@ -640,6 +804,10 @@ async function initAnomalies() {
             byType.map((_, i) => flagColors[i % flagColors.length]),
             { yFmt: fmt.num, height: 240 }
         );
+
+        // Render flag legend below the chart — shows what each flag means and
+        // what action the pipeline took (retained in trips or excluded entirely)
+        renderFlagLegend(byType);
     }
 
     // Flagged records table — uses the JOIN'd endpoint (zone_name from trips)
@@ -649,12 +817,15 @@ async function initAnomalies() {
         if (tbody) {
             tbody.innerHTML = list.map(r => {
                 const note = FLAG_NOTES[r.err_type] || r.err_type;
-                const fare = r.fare != null ? fmt.usd(r.fare) : '—';
-                const zone = r.pickup_zone_name || '—';
+                // fare comes from details JSONB (stored by ETL) or top-level column
+                const fare = (r.fare != null) ? fmt.usd(r.fare)
+                           : (r.details && r.details.fare != null) ? fmt.usd(r.details.fare)
+                           : '—';
+                // zone name isn't directly available since we can't join on UUID vs row_num;
+                // show the row number as the identifier instead
                 return `
                     <tr>
-                        <td class="mono">${r.row_num}</td>
-                        <td class="primary">${zone}</td>
+                        <td class="mono" style="color:var(--muted)">#${r.row_num}</td>
                         <td><span style="font-family:'DM Mono',monospace;font-size:11px;background:#fef2f2;color:#e05252;padding:2px 6px;border-radius:4px;white-space:nowrap">${r.err_type}</span></td>
                         <td class="mono">${fare}</td>
                         <td style="font-size:12px;color:var(--muted)">${note}</td>
