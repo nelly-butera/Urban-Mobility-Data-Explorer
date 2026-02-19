@@ -23,8 +23,15 @@ async function getKpis(req, res) {
       FROM trips
     `);
 
+    // Only count rows that are actually in the trips table.
+    // error_log also holds BAD_DATETIME + DROPOFF_BEFORE_PICKUP flags for rows
+    // that were excluded entirely — those never made it into trips, so counting
+    // them here inflates the KPI shown on the frontend.
+    // (trips.id is UUID; error_log.row_num is CSV row index — no direct join.)
     const errorCount = await db.query(`
-      SELECT COUNT(DISTINCT row_num) AS flagged_rows FROM error_log
+      SELECT COUNT(DISTINCT row_num) AS flagged_rows
+      FROM error_log
+      WHERE err_type NOT IN ('BAD_DATETIME', 'DROPOFF_BEFORE_PICKUP')
     `);
 
     const row = result.rows[0];
@@ -86,6 +93,9 @@ async function getTopZones(req, res, query) {
         AVG(t.tip_pct)  AS avg_tip_percentage
       FROM zones z
       JOIN trips t ON t.pickup_zone = z.id
+      WHERE z.id NOT IN (264, 265)
+        AND z.zone_name NOT IN ('Unknown', 'N/A')
+        AND z.borough   NOT IN ('Unknown', 'N/A')
       GROUP BY z.id, z.borough, z.zone_name
       ORDER BY trip_count DESC
       LIMIT $1

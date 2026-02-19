@@ -23,6 +23,9 @@ async function getTopProfitableZones(req, res, query) {
       FROM zones z
       JOIN trips t ON t.pickup_zone = z.id
       WHERE t.money_per_min IS NOT NULL
+        AND z.id NOT IN (264, 265)
+        AND z.zone_name NOT IN ('Unknown', 'N/A')
+        AND z.borough   NOT IN ('Unknown', 'N/A')
       GROUP BY z.id, z.borough, z.zone_name, z.service_zone
       HAVING COUNT(t.id) >= 10
       ORDER BY avg_revenue_per_minute DESC
@@ -53,6 +56,8 @@ async function getProfitabilityByBorough(req, res) {
       FROM zones z
       JOIN trips t ON t.pickup_zone = z.id
       WHERE z.borough IS NOT NULL
+        AND z.borough NOT IN ('Unknown', 'N/A')
+        AND z.id NOT IN (264, 265)
       GROUP BY z.borough
       ORDER BY total_revenue DESC
     `);

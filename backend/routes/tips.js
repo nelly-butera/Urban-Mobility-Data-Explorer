@@ -28,6 +28,8 @@ async function getTipsByBorough(req, res) {
       FROM zones z
       JOIN trips t ON t.pickup_zone = z.id
       WHERE z.borough IS NOT NULL
+        AND z.borough NOT IN ('Unknown', 'N/A')
+        AND z.id NOT IN (264, 265)
         AND t.tip_pct IS NOT NULL
       GROUP BY z.borough
       ORDER BY avg_tip_percentage DESC

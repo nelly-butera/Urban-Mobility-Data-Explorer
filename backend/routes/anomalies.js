@@ -6,9 +6,13 @@ const { ok, error } = require('../utils/httpHelpers');
 // GET /api/anomalies/summary
 async function getAnomalySummary(req, res) {
   try {
+    // Exclude BAD_DATETIME and DROPOFF_BEFORE_PICKUP — those are rows that were
+    // rejected entirely and never inserted into trips. Showing them would inflate
+    // the counts and confuse the frontend (they have no trip to reference).
     const byType = await db.query(`
       SELECT err_type, COUNT(*) AS count
       FROM error_log
+      WHERE err_type NOT IN ('BAD_DATETIME', 'DROPOFF_BEFORE_PICKUP')
       GROUP BY err_type
       ORDER BY count DESC
     `);
@@ -18,15 +22,14 @@ async function getAnomalySummary(req, res) {
         COUNT(*)                  AS total_records,
         COUNT(DISTINCT row_num)   AS unique_flagged_rows
       FROM error_log
+      WHERE err_type NOT IN ('BAD_DATETIME', 'DROPOFF_BEFORE_PICKUP')
     `);
 
-    const tripCount = await db.query(`
-      SELECT COUNT(*) AS total FROM trips
-    `);
+    const tripCount = await db.query(`SELECT COUNT(*) AS total FROM trips`);
 
-    const totalTrips   = parseInt(tripCount.rows[0].total, 10);
-    const flaggedRows  = parseInt(totals.rows[0].unique_flagged_rows, 10);
-    const flagRate     = totalTrips > 0
+    const totalTrips  = parseInt(tripCount.rows[0].total, 10);
+    const flaggedRows = parseInt(totals.rows[0].unique_flagged_rows, 10);
+    const flagRate    = totalTrips > 0
       ? parseFloat(((flaggedRows / totalTrips) * 100).toFixed(2))
       : 0;
 
@@ -43,6 +46,7 @@ async function getAnomalySummary(req, res) {
 }
 
 // GET /api/anomalies/list
+// Joins error_log -> trips -> zones so we get actual zone names and fare info
 async function getAnomalyList(req, res, query) {
   const limit  = Math.min(parseInt(query.limit, 10)  || 50, 200);
   const offset = Math.max(parseInt(query.offset, 10) || 0,  0);
@@ -52,21 +56,33 @@ async function getAnomalyList(req, res, query) {
   let   typeClause = '';
 
   if (type) {
-    typeClause = 'AND err_type = $3';
+    typeClause = 'AND el.err_type = $3';
     params.push(type);
   }
 
   try {
+    // JOIN trips + pickup zone so the table shows real zone names and fare values
     const result = await db.query(`
-      SELECT err_id, row_num, err_type, details, created_at
-      FROM error_log
+      SELECT
+        el.err_id,
+        el.row_num,
+        el.err_type,
+        el.details,
+        el.created_at,
+        -- fare and distance are stored in the details JSONB by the ETL pipeline
+        (el.details->>'fare')::numeric     AS fare,
+        (el.details->>'distance')::numeric AS distance
+      FROM error_log el
       WHERE 1=1 ${typeClause}
-      ORDER BY created_at DESC
+        AND el.err_type NOT IN ('BAD_DATETIME', 'DROPOFF_BEFORE_PICKUP')
+      ORDER BY el.created_at DESC
       LIMIT $1 OFFSET $2
     `, params);
 
     const countParams = type ? [type] : [];
-    const countWhere  = type ? 'WHERE err_type = $1' : '';
+    const countWhere  = type
+      ? "WHERE err_type = $1 AND err_type NOT IN ('BAD_DATETIME','DROPOFF_BEFORE_PICKUP')"
+      : "WHERE err_type NOT IN ('BAD_DATETIME','DROPOFF_BEFORE_PICKUP')";
     const countResult = await db.query(
       `SELECT COUNT(*) AS total FROM error_log ${countWhere}`,
       countParams,
