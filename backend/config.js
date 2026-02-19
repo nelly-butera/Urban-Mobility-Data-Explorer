@@ -7,8 +7,8 @@ require('dotenv').config();
 const config = {
   // settings for where the local server lives
   server: {
-    port: process.env.PORT || 3000,
-    host: process.env.HOST || '0.0.0.0',
+    port: parseInt(process.env.PORT,10) || 3000,
+    host: process.env.NODE_ENV === 'production' ? '0.0.0.0' : localhost,
   },
 
   // this part is the brain for the database connection

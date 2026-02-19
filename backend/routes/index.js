@@ -1,7 +1,7 @@
 'use strict';
 
-// importing the native url tool and our own logic folders
-const url         = require('url');
+// importing our logic folders and helpers
+// we are using the global URL API now to keep the console clean of warnings
 const overview      = require('./overview');
 const profitability = require('./profitability');
 const tips          = require('./tips');
@@ -18,7 +18,7 @@ const ROUTE_TABLE = [
 
 // just a quick check to see if the server is actually alive
 function handleHealth(req, res) {
-  ok(res, { status: 'ok', timestamp: new Date().toISOString() });
+  ok(res, { status: 'ok', timestamp: new Date().toISOString(), message: 'alive and well' });
 }
 
 // this is the main function that figures out where a request should go
@@ -33,10 +33,14 @@ async function dispatch(req, res) {
     return;
   }
 
-  // splitting the url apart to see the path and the search params
-  const parsed   = url.parse(req.url, true);
-  const pathname = parsed.pathname || '/';
-  const query    = parseQuery(new URL(req.url, 'http://localhost'));
+  // splitting the url apart using the modern WHATWG URL API
+  // we do this to get the pathname and search params without deprecation warnings
+  const baseURL = `http://${req.headers.host || 'localhost'}`;
+  const fullUrl = new URL(req.url, baseURL);
+  const pathname = fullUrl.pathname;
+  
+  // converting searchParams to a plain object so our logic stays the same
+  const query = Object.fromEntries(fullUrl.searchParams);
 
   // if they just want the health check, send it here
   if (pathname === '/health' || pathname === '/api/health') {
